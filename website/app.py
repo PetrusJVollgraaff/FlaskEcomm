@@ -11,7 +11,7 @@ migrate = Migrate()
 
 
 def create_app():
-    app = Flask(__name__, static_folder='static', template_folder='templates')
+    app = Flask(__name__)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, DB_NAME)}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -22,8 +22,12 @@ def create_app():
     migrate.init_app(app, db)
 
     from .routes.frontend.route import views
+    from .routes.backend.route import editlogin
+    from .routes.backend.modules.route import modules
 
     app.register_blueprint(views, url_prefix='/')
+    app.register_blueprint(editlogin)
+    app.register_blueprint(modules)
 
     # Import models
     from website.models import products, media, modules
