@@ -7,6 +7,12 @@ python -m venv env
 
 ```
 
+install dependencies
+
+```
+    pip install -r requirements.txt
+```
+
 first setup database
 
 ```
