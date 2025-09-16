@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <link rel="stylesheet" href="{{ url_for('modules.static', filename='css/main.css') }}">
     {% block styles %}
 
     {% endblock%}
@@ -14,7 +14,7 @@
 
 <body>
     <header>
-        <h1>Backend base</h1>
+        {% include 'backendnav.html'%}
     </header>
     <main>
         {% block content %} {% endblock %}
