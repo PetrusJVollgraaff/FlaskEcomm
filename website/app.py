@@ -1,9 +1,10 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "public", "images")
 
 db = SQLAlchemy()
 DB_NAME = "database.db"
@@ -21,6 +22,9 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
+    # 5 MB limit (like multer)
+    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  
+    
     from .routes.frontend.route import views
     from .routes.backend.route import editlogin
     from .routes.backend.modules.route import modules
@@ -28,6 +32,10 @@ def create_app():
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(editlogin)
     app.register_blueprint(modules)
+
+    @app.route("/static/images/<path:filename>")
+    def uploaded_images(filename ):
+        return send_from_directory(UPLOAD_FOLDER, filename)
 
     # Import models
     from website.models import products, media, modules

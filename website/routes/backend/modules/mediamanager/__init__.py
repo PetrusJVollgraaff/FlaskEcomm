@@ -1,8 +1,11 @@
 from flask import Blueprint
 import os
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_ROOT = os.path.join(os.getcwd(), "website", "public", "images")
 #print(BASE_DIR)
+
+# Allowed file extensions
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
 
 mediamanager = Blueprint(
     'mediamanager', 
