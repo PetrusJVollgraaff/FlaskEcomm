@@ -5,5 +5,19 @@
 {% endblock%}
 
 {% block content%}
-<h1>Product Manager</h1>
+<div class="main_ctn">
+    <header class="top_header">
+        <h2>Product Manager</h2>
+        <button type="button" id="btn_addproduct">Add Product</button>
+    </header>
+    <main class="product_ctn">
+        <div id="product_ctn">
+
+        </div>
+    </main>
+</div>
 {% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('modules.productmanager.static', filename='js/main.js') }}"></script>
+{% endblock%}

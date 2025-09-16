@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('modules.static', filename='css/main.css') }}">
+    <script src="{{ url_for('modules.static', filename='js/main.js') }}"></script>
     {% block styles %}
 
     {% endblock%}
@@ -13,13 +14,16 @@
 </head>
 
 <body>
-    <header>
-        {% include 'backendnav.html'%}
-    </header>
+
+    {% include 'backendnav.html'%}
+
     <main>
         {% block content %} {% endblock %}
     </main>
 
+    {% block scripts %}
+
+    {% endblock%}
 </body>
 
 </html>
