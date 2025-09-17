@@ -1,9 +1,11 @@
 # Flask Ecommerce
 
-create Virtual Enviroment first
+create and start Virtual Enviroment
 
 ```
 python -m venv env
+
+env\Scripts\activate
 
 ```
 

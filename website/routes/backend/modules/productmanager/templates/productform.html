@@ -1,0 +1,64 @@
+<form id="product_form_editor" novalidate>
+    {{ form.hidden_tag() }}
+    <fieldset>
+        <legend>
+            Product Info
+        </legend>
+
+        <div class="form-group">
+            {{ form.product_name.label() }}
+            {{ form.product_name(placeholder="Product Name", class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.product_code.label() }}
+            {{ form.product_code(placeholder="Product Code", class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.product_decription.label() }}
+            {{ form.product_decription(placeholder="Product Description", class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.product_stock.label() }}
+            {{ form.product_stock(class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.product_show.label() }}
+            {{ form.product_show(class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.product_special.label() }}
+            {{ form.product_special(class="form-control") }}
+        </div>
+    </fieldset>
+    <hr>
+
+    <fieldset>
+        <legend>
+            Product Prices
+        </legend>
+        <div class="form-group">
+            {{ form.price_normal.label() }}
+            {{ form.price_normal(class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.price_special.label() }}
+            {{ form.price_special(placeholder="Product Code", class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.special_datestart.label() }}
+            {{ form.special_datestart(class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.special_dateend.label() }}
+            {{ form.special_dateend(placeholder="Product Code", class="form-control") }}
+        </div>
+    </fieldset>
+</form>

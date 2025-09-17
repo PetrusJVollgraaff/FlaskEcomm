@@ -2,6 +2,8 @@ class Modal {
   constructor(options) {
     this.settings = {
       ...{
+        ajaxData: null,
+        ajaxUrl: null,
         title: "Modal",
         buttons: null,
         content: null,
@@ -58,18 +60,40 @@ class Modal {
   #loadContent(fallback) {
     if (this?.popupEl) {
       var contentCtn = this.popupEl.getElementsByClassName("content_ctn");
-      switch (typeof this.settings.content) {
-        case "string":
-          contentCtn[0].innerHTML = this.settings.content;
-          break;
-        case "object":
-          contentCtn[0].appendChild(this.settings.content);
-          break;
+      if (this.settings.content) {
+        switch (typeof this.settings.content) {
+          case "string":
+            contentCtn[0].innerHTML = this.settings.content;
+            break;
+          case "object":
+            contentCtn[0].appendChild(this.settings.content);
+            break;
+        }
+
+        this.#loadButtons();
+
+        if (typeof fallback == "function") fallback();
+      } else if (this.settings.ajaxUrl) {
+        const request = !this.settings.ajaxData
+          ? new Request(this.settings.ajaxUrl)
+          : new Request(this.settings.ajaxUrl, {
+              method: "POST",
+              body: JSON.stringify(this.settings.ajaxData),
+              headers: {
+                //"Content-Type": "application/x-www-form-urlencoded ",
+                "Content-Type": "application/json",
+              },
+            });
+
+        fetch(request)
+          .then((response) => response.text())
+          .then((response) => {
+            contentCtn[0].innerHTML = response;
+            this.#loadButtons();
+
+            if (typeof fallback == "function") fallback();
+          });
       }
-
-      this.#loadButtons();
-
-      if (typeof fallback == "function") fallback();
     }
   }
 

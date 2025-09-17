@@ -1,5 +1,5 @@
 from flask import jsonify, render_template, request
-from . import productmanager
+from . import productmanager, ProductForm
 
 products = [
   {
@@ -49,3 +49,36 @@ def removeproduct():
         return jsonify({"status": "success", "message": "product are removes"}), 200
        
     return jsonify({"status": "error", "message": "Not Supported"}), 400
+
+@productmanager.route("/productfield", methods=["GET", "POST"])
+def productAdd():
+    form = ProductForm()
+        
+    if request.method == 'POST':
+        productname= form.product_name.data
+        productdescript= form.product_decription.data
+
+        print(productname)
+        print(productdescript)
+
+        return jsonify({ "status": "success", "message": "product is added" })
+    
+    return render_template('productform.html', form=form)
+
+@productmanager.route("/productfield/<int:productid>", methods=["GET", "PUT"])
+def productEdit(productid):
+    form = ProductForm() 
+    print(productid)           
+    if request.method == 'PUT':
+
+        #print(form.validate_on_submit())
+        productname= form.product_name.data
+        productdescript= form.product_decription.data
+
+        print(productname)
+        print(productdescript)
+
+        return jsonify({ "status": "success", "message": "product is updated" })
+        
+
+    return render_template('productform.html', form=form)
