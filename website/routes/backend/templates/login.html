@@ -1,4 +1,21 @@
-{% extends 'backendbase.html' %}
 {% block content%}
-<h1>Login</h1>
+<div class="container">
+    <h1>Login</h1>
+    <form method="POST" id="Login">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.email.label() }}
+            {{ form.email(placeholder="Email", class="form-control") }}
+        </div>
+        <br>
+        <div class="form-group">
+            {{ form.password.label() }}
+            {{ form.password(placeholder="Password", class="form-control") }}
+        </div>
+        <br>
+
+        {{ form.submit(class_="btn btn-primary") }}
+
+    </form>
+</div>
 {% endblock %}

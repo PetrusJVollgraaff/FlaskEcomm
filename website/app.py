@@ -1,6 +1,7 @@
 from flask import Flask, render_template, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_login import LoginManager
 import os
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -38,7 +39,29 @@ def create_app():
         return send_from_directory(UPLOAD_FOLDER, filename)
 
     # Import models
-    from website.models import products, media, modules
+    from website.models import users, products, media, modules
+
+    with app.app_context():
+        db.create_all()
+        from website.models.users import User
+
+        if not User.query.filter_by(email="admin@example.com").first():
+            admin = User(username="admin", email="admin@example.com")
+            admin.set_password("admin123")
+            db.session.add(admin)
+            db.session.commit()
+            print("Admin user created: admin@example.com / admin123")
+        else:
+            print("Admin already exists.")
+
+    login_manager = LoginManager()
+    login_manager.login_view = 'editlogin.index'
+    login_manager.init_app(app)
+
+    @login_manager.user_loader
+    def load_user(id):
+       return User.query.get(int(id))
+
 
     ErrorPage(app)
 

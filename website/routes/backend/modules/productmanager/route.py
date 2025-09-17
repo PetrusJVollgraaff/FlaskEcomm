@@ -1,4 +1,5 @@
 from flask import jsonify, render_template, request
+from flask_login import login_required
 from . import productmanager, ProductForm
 
 products = [
@@ -12,16 +13,19 @@ products = [
 
 #route
 @productmanager.route('/', methods=["GET"])
+@login_required
 def index():
     return  render_template("productmanager.html")
 
 
 @productmanager.route('/getproducts', methods=["GET"])
+@login_required
 def getproducts():
     if request.method == "GET":
         return jsonify(products)
 
 @productmanager.route('/getproduct', methods=["POST"])
+@login_required
 def getproduct():
     if request.method == "POST":
         data = request.get_json()  # Get the JSON body
@@ -37,10 +41,12 @@ def getproduct():
     return jsonify({ "status": "error", "message": "Something went wrong." })
 
 @productmanager.route('/addproduct', methods=["POST"])
+@login_required
 def addproduct():
     return  render_template("mediamanager.html")
 
 @productmanager.route('/removeproduct', methods=["DELETE"])
+@login_required
 def removeproduct():
     
     if request.method == "DELETE":
@@ -51,6 +57,7 @@ def removeproduct():
     return jsonify({"status": "error", "message": "Not Supported"}), 400
 
 @productmanager.route("/productfield", methods=["GET", "POST"])
+@login_required
 def productAdd():
     form = ProductForm()
         
@@ -66,6 +73,7 @@ def productAdd():
     return render_template('productform.html', form=form)
 
 @productmanager.route("/productfield/<int:productid>", methods=["GET", "PUT"])
+@login_required
 def productEdit(productid):
     form = ProductForm() 
     print(productid)           
