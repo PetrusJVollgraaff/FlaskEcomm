@@ -77,8 +77,22 @@
 }
 
 /* Product Editor */
-form#product_form_editor {
-  display: flex;
+form#product_form_editor > div {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-areas: "info price" "img img";
   gap: 14px;
   margin: 15px;
+}
+
+form#product_form_editor > div > fieldset:first-child {
+  grid-area: info;
+}
+
+form#product_form_editor > div > fieldset:nth-child(2) {
+  grid-area: price;
+}
+
+form#product_form_editor > div > fieldset:last-child {
+  grid-area: img;
 }

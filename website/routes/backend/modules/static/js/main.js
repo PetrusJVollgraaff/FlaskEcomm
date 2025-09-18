@@ -60,6 +60,7 @@ class Modal {
   #loadContent(fallback) {
     if (this?.popupEl) {
       var contentCtn = this.popupEl.getElementsByClassName("content_ctn");
+      console.log(this.settings.content);
       if (this.settings.content) {
         switch (typeof this.settings.content) {
           case "string":
@@ -367,9 +368,38 @@ class AlertPopup {
   }
 }
 
+class MediaSelectorItem {
+  #elmP;
+  #elm;
+  #data = {};
+  constructor({ elmP, data }, callback = () => {}) {
+    this.#elmP = elmP;
+    this.#data = { ...this.#data, ...data };
+
+    this.#init();
+  }
+
+  #init() {
+    this.#elm = createDOMElement({
+      attributes: this.#data,
+    });
+    this.#elm.appendChild(
+      createDOMElement({ type: "img", attributes: { src: this.#data.path } })
+    );
+    this.#elm.appendChild(
+      createDOMElement({ type: "span", text: this.#data.name })
+    );
+
+    this.#elmP.appendChild(this.#elm);
+  }
+}
+
 class MediaSelector {
   #medias = [];
+  #mediasArr = [];
+  #popElm;
   #elmP;
+  #mainBody;
   #settings = {
     onSelect: () => {},
     onBeforeOpen: () => {},
@@ -381,18 +411,18 @@ class MediaSelector {
     showExt: ["jpg", "jpeg", "png", "gif", "webp"],
   };
   constructor({ elm, options }) {
-    this.#elmP;
+    this.#elmP = elm;
     this.#settings = {
       ...this.#settings,
       ...options,
     };
     this.#init();
+
+    console.log("Hello");
   }
 
   #init() {
-    $(this.#elmP)
-      .off("click tap")
-      .on("click tap", this.#clickedOnThis.bind(this));
+    this.#elmP.addEventListener("click", this.#clickedOnThis.bind(this));
   }
 
   #getMedia() {
@@ -401,12 +431,84 @@ class MediaSelector {
       .then((response) => response.json())
       .then((response) => {
         _.#medias = response;
+        _.#appendMedia();
       });
+  }
+
+  #appendMedia() {
+    this.#medias.forEach((obj) => {
+      console.log(obj);
+      this.#mediasArr.push(
+        new MediaSelectorItem({ elmP: this.#mainBody, data: obj }, (data) => {})
+      );
+    });
+
+    console.log(this.#mediasArr);
   }
 
   #clickedOnThis(evt) {
     var _ = this;
-    _.#getMedia();
+    console.log("helo");
+
+    if (typeof _.#settings.onBeforeOpen == "function") {
+      _.#settings.onBeforeOpen(
+        _.#elmP,
+        //$(".mediaSelector").last().find(".mediaMainbody"),
+        _.#settings
+      );
+    }
+
+    /**
+     * (_.#settings.multiSelect &&
+            {
+            title: "Apply",
+            click: function (modal) {
+              modal.close();
+            },
+          }
+          )
+     */
+
+    this.#popElm = new Modal(
+      {
+        title: "",
+        content:
+          '<div class="mediaSelector">' +
+          '   <div class="mediaHeader">' +
+          '     <label class="gt-label">' +
+          '       Search&nbsp;&nbsp;<input class="gt-input" name="search_media" id="search_media" type="search" placeholder="Type here to search...">' +
+          "     </label>" +
+          "   </div>" +
+          '   <div class="mediaMainbody gridView">' +
+          "     </div>" +
+          "</div>",
+        onOpen: (modal) => {
+          var popupEl = modal.popupEl;
+          _.#mainBody = popupEl.querySelector(".mediaMainbody");
+
+          setTimeout(function () {
+            if (typeof _.#settings.onBeforeOpen == "function")
+              _.#settings.onBeforeOpen(
+                _.#elmP,
+                //$(".mediaSelector").last().find(".mediaMainbody"),
+                _.#settings
+              );
+          }, 1000);
+          console.log("world");
+
+          _.#getMedia();
+        },
+        buttons: [
+          {
+            title: "Cancel",
+            click: function (modal) {
+              modal.close();
+            },
+          },
+        ],
+      },
+      (data) => {}
+    );
   }
 }
 

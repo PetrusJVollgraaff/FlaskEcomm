@@ -4,7 +4,7 @@ from flask import Blueprint,jsonify, render_template, request
 from sqlalchemy import text
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, DateField, TextAreaField, BooleanField, IntegerField
-from wtforms.validators import DataRequired, Length, NumberRange
+from wtforms.validators import DataRequired, Length, NumberRange, InputRequired
 from datetime import date, timedelta
 
 mindate = date.today()+ timedelta(days=1)
@@ -19,12 +19,12 @@ class ProductForm(FlaskForm):
     product_show = BooleanField("Show on site")
     product_special = BooleanField("Product on special")
 
-    price_normal = FloatField('Price', validators=[DataRequired(), NumberRange(min=0)], render_kw={"type" : "number"})
-    price_special = FloatField('Special Price', validators=[NumberRange(min=0)], render_kw={"type" : "number"})
+    price_normal = FloatField('Price', validators=[InputRequired(), NumberRange(min=0)], render_kw={"type" : "number"}, default=0)
+    price_special = FloatField('Special Price', validators=[NumberRange(min=0)], render_kw={"type" : "number"}, default=0)
     special_datestart = DateField("Special Date Start", format="%Y-%m-%d", default=mindate, render_kw={"min" : mindate })
     special_dateend = DateField("Special Date End", format="%Y-%m-%d", default=date.today()+ timedelta(days=3), render_kw={"min" : mindate + timedelta(days=1)})
     
-    main_imgid = IntegerField("Product id", validators=[NumberRange(min=0)])
+    #main_imgid = IntegerField("Product id", validators=[InputRequired(), NumberRange(min=0)])
 
 
 products = [
@@ -45,10 +45,12 @@ productmanager = Blueprint(
     static_folder='static'
 )
 
+#Get the html
 @productmanager.route('/', methods=["GET"])
 def index():
     return  render_template("productmanager.html")
 
+#Get availible products
 @productmanager.route('/getproducts', methods=["GET"])
 def getproducts():
     if request.method == "GET":
@@ -86,6 +88,8 @@ def getproducts():
 
         return jsonify(products)
 
+
+#Mark product as delete
 @productmanager.route('/removeproduct', methods=["DELETE"])
 def removeproduct():
     
@@ -96,11 +100,16 @@ def removeproduct():
        
     return jsonify({"status": "error", "message": "Not Supported"}), 400
 
+
+#Create a new product
 @productmanager.route("/productfield", methods=["GET", "POST"])
 def productAdd():
     form = ProductForm()
         
     if request.method == 'POST':
+        if not form.validate_on_submit():
+            return jsonify({ "status": "error", "message": "Product could not be created", "reason": form.errors }), 500
+        
         sqlimg = text('''
                 INSERT INTO mediaused ([media_id], [order], [function_as], [create_at], [deleted_yn])
                 VALUES (:imgid, 0, "main product image", CURRENT_TIME, 0)
@@ -136,29 +145,30 @@ def productAdd():
     
     return render_template('productform.html', form=form)
 
+
+#Update/Edit product value
 @productmanager.route("/productfield/<int:productid>", methods=["GET", "PUT"])
 def productEdit(productid):
     form = ProductForm() 
     sql = text("""
-                    SELECT 
-                        P.id, 
-                        P.name, 
-                        P.description,
-                        P.code,
-                        P.instock,
-                        P.onspecial,
-                        P.showonline,
-
-                        CASE 
-                            WHEN M.id IS NOT NULL THEN
-                                '/static/images/'|| M.name ||'/thumb'|| M.ext
-                            ELSE ''
-                        END AS path
-                    FROM products AS P
-                    LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
-                    LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
-                    WHERE P.deleted_yn = 0 AND P.id=:productid
-                """)
+                SELECT 
+                    P.id, 
+                    P.name, 
+                    P.description,
+                    P.code,
+                    P.instock,
+                    P.onspecial,
+                    P.showonline,
+                    CASE 
+                        WHEN M.id IS NOT NULL THEN
+                            '/static/images/'|| M.name ||'/thumb'|| M.ext
+                        ELSE ''
+                    END AS path
+                FROM products AS P
+                LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
+                LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
+                WHERE P.deleted_yn = 0 AND P.id=:productid
+            """)
     result = db.session.execute(sql, {"productid": productid})
     results = result.mappings().fetchone()       
 
@@ -175,10 +185,10 @@ def productEdit(productid):
         form.product_show.data = results["showonline"] == 1   
     
     if request.method == 'PUT':
-        print(form.product_id.data)
-        print(form.product_special.data)  
-        print(form.product_show.data)  
-
+        if not form.validate_on_submit():
+            return jsonify({ "status": "error", "message": "Product could not be updated", "reason": form.errors }), 500
+        
+        """
         sqlproduct = text('''
                         UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 
                           [onspecial]=:onspecial, [showonline]=:showonline
@@ -199,7 +209,7 @@ def productEdit(productid):
                                     )
         row_product = result.fetchone()
         db.session.commit()                 
-
+        """
         return jsonify({ "status": "success", "message": "product is updated" }), 200
         
     return render_template('productform.html', form=form)

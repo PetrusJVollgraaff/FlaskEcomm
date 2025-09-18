@@ -1,20 +1,7 @@
 class ProductEditor {
-  #productData = {
-    id: 0,
-    name: "",
-    instock: 0,
-    image: { imgid: 0, usedid: 0, path: "" },
-    code: "",
-    showonline: false,
-    onspecial: false,
-    normalprice: {
-      id: 0,
-      price: 0,
-    },
-    specialprice: null,
-  };
   #productID = 0;
   #formELm;
+  #MainImgBtn;
   #modal;
   #formValid = true;
 
@@ -72,11 +59,13 @@ class ProductEditor {
         onOpen: (modal) => {
           var popupEl = modal.popupEl;
           _.#formELm = popupEl.querySelector("form");
+          _.#MainImgBtn = popupEl.querySelector("#main_imgbtn");
+          _.#setMediaSelector();
           _.#eventListener();
         },
         buttons: [
           {
-            title: (this.#action = "edit" ? "Edit" : "Create"),
+            title: this.#action == "edit" ? "Edit" : "Create",
             form: "product_form_editor",
           },
           {
@@ -119,6 +108,10 @@ class ProductEditor {
         break;
       }
     }
+  }
+
+  #setMediaSelector() {
+    new MediaSelector({ elm: this.#MainImgBtn });
   }
 
   #eventListener() {
