@@ -1,4 +1,5 @@
 from flask import Blueprint
+from flask_login import login_required
 import os
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 #print(BASE_DIR)
@@ -15,5 +16,11 @@ modules = Blueprint(
 
 modules.register_blueprint(mediamanager)
 modules.register_blueprint(productmanager)
+
+@modules.before_request
+@login_required
+def require_login():
+    # This will run before *every* request in this blueprint
+    pass
 
 from . import route
