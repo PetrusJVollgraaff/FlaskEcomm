@@ -9,7 +9,7 @@ class Products(db.Model):
     mediaused_id = db.Column(db.Integer, db.ForeignKey('mediaused.id'))
     name = db.Column(db.String(250), nullable=False, unique=True)
     instock = db.Column(db.Integer, default=0)
-    desciption = db.Column(db.Text, nullable=True)
+    description = db.Column(db.Text, nullable=True)
     code = db.Column(db.String(250), nullable=False)
     onspecial = db.Column(db.Boolean, default=False)
     showonline = db.Column(db.Boolean, default=False)

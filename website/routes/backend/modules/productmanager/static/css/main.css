@@ -75,3 +75,10 @@
 .product_main_tab .tab_inner > div:last-child {
   margin-bottom: 5px;
 }
+
+/* Product Editor */
+form#product_form_editor {
+  display: flex;
+  gap: 14px;
+  margin: 15px;
+}

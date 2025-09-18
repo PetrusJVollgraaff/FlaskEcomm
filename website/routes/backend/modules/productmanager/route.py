@@ -112,7 +112,7 @@ def productAdd():
         db.session.commit()
     
         sqlproduct = text('''
-                        INSERT INTO products([mediaused_id], [name], [instock], [desciption], [code], [onspecial], [showonline], [create_at], [deleted_yn])
+                        INSERT INTO products([mediaused_id], [name], [instock], [description], [code], [onspecial], [showonline], [create_at], [deleted_yn])
                         VALUES (:imgusedid, :name, :instock, :descript, :code, :onspecial, :showonline, CURRENT_TIME, 0)
                           RETURNING id;
                     ''')
@@ -143,7 +143,7 @@ def productEdit(productid):
                     SELECT 
                         P.id, 
                         P.name, 
-                        P.desciption,
+                        P.description,
                         P.code,
                         P.instock,
                         P.onspecial,
@@ -167,7 +167,7 @@ def productEdit(productid):
 
     if request.method == 'GET':
         form.product_name.data = results["name"]
-        form.product_decription.data = results["desciption"]
+        form.product_decription.data = results["description"]
         form.product_code.data = results["code"]
     
         form.product_stock.data = results["instock"]
@@ -180,7 +180,7 @@ def productEdit(productid):
         print(form.product_show.data)  
 
         sqlproduct = text('''
-                        UPDATE products SET [name]=:name, [instock]=:instock, [desciption]=:descript, [code]=:code, 
+                        UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 
                           [onspecial]=:onspecial, [showonline]=:showonline
                         WHERE id=:id
                         RETURNING id;
