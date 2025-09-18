@@ -1,3 +1,5 @@
 /env
 /migrations
+/website/public
 /website/database.db
+/.vscode

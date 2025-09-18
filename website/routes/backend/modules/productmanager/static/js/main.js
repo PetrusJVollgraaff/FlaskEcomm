@@ -64,31 +64,44 @@ class ProductEditor {
   #init() {
     var _ = this;
     //this.#formTabs();
-    this.#modal = new Modal({
-      title: this.#action == "edit" ? "Edit Product" : "Create Product",
-      //content: this.#formELm,
-      ajaxUrl: this.#ajaxUrl,
-      onOpen: (modal) => {
-        var popupEl = modal.popupEl;
-        _.#formELm = popupEl.querySelector("form");
-        _.#eventListener();
-      },
-      buttons: [
-        {
-          title: (this.#action = "edit" ? "Edit" : "Create"),
-          form: "product_form_editor",
+    this.#modal = new Modal(
+      {
+        title: this.#action == "edit" ? "Edit Product" : "Create Product",
+        //content: this.#formELm,
+        ajaxUrl: this.#ajaxUrl,
+        onOpen: (modal) => {
+          var popupEl = modal.popupEl;
+          _.#formELm = popupEl.querySelector("form");
+          _.#eventListener();
         },
-        {
-          title: "Cancel",
-          click: function (modal) {
-            console.log("123");
-            modal.close();
+        buttons: [
+          {
+            title: (this.#action = "edit" ? "Edit" : "Create"),
+            form: "product_form_editor",
           },
-        },
-      ],
-    });
+          {
+            title: "Cancel",
+            click: function (modal) {
+              console.log("123");
+              modal.close();
+            },
+          },
+        ],
+      },
+      (data) => {
+        if (data.status == "error") {
+          new AlertPopup({
+            title: "Warning",
+            overlayer: true,
+            content: data.message,
+          });
+        }
+      }
+    );
   }
+
   #CheckFieldValid() {
+    this.#formValid = true;
     for (let field of this.#formELm.elements) {
       var objData = this.#checkValidArr.find((obj) => obj.name == field.name);
       if (field.willValidate && !field.checkValidity()) {
@@ -125,8 +138,23 @@ class ProductEditor {
             "Content-Type": "application/x-www-form-urlencoded ",
           },
         })
-          .then((response) => response.json())
-          .then((response) => console.log(response));
+          .then((response) => {
+            if (response.ok) {
+              return response.json();
+            }
+
+            const data = response.json();
+
+            // Create error manually and attach custom data
+            const error = new Error(`Response status: ${response.status}`);
+            error.data = data; // 👈 custom property
+            throw error;
+          })
+          .then((response) => console.log(response))
+          .catch((err) => {
+            console.error(err.message);
+            //this.callback(err.data);
+          });
       }
 
       return false;

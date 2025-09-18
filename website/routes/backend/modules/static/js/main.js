@@ -1,5 +1,5 @@
 class Modal {
-  constructor(options) {
+  constructor(options, callback = () => {}) {
     this.settings = {
       ...{
         ajaxData: null,
@@ -18,7 +18,7 @@ class Modal {
       },
       ...options,
     };
-
+    this.callback = callback;
     this.#build();
     this.popupEl = null;
 
@@ -73,6 +73,7 @@ class Modal {
         this.#loadButtons();
 
         if (typeof fallback == "function") fallback();
+        this.#appendToBody();
       } else if (this.settings.ajaxUrl) {
         const request = !this.settings.ajaxData
           ? new Request(this.settings.ajaxUrl)
@@ -86,12 +87,28 @@ class Modal {
             });
 
         fetch(request)
-          .then((response) => response.text())
+          .then(async (response) => {
+            if (response.ok) {
+              return response.text();
+            }
+
+            const data = await response.json();
+
+            // Create error manually and attach custom data
+            const error = new Error(`Response status: ${response.status}`);
+            error.data = data; // 👈 custom property
+            throw error;
+          })
           .then((response) => {
             contentCtn[0].innerHTML = response;
             this.#loadButtons();
 
             if (typeof fallback == "function") fallback();
+            this.#appendToBody();
+          })
+          .catch((err) => {
+            console.error(err.message);
+            this.callback(err.data);
           });
       }
     }
@@ -133,7 +150,6 @@ class Modal {
   }
 
   open() {
-    const body = document.getElementsByTagName("body");
     if (this.settings.overlayer) {
       this.OverDiv = createDOMElement({
         attributes: {
@@ -151,13 +167,16 @@ class Modal {
       this.#EventListener();
     }
 
-    body[0].appendChild(this.popupEl);
-
     this.#loadContent(() => {
       if (typeof this.settings.onOpen == "function") {
         this.settings.onOpen(this);
       }
     });
+  }
+
+  #appendToBody() {
+    const body = document.getElementsByTagName("body");
+    body[0].appendChild(this.popupEl);
   }
 
   disablebtn() {
