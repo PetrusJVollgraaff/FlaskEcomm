@@ -6,6 +6,7 @@ class Products(db.Model):
     __tablename__ = "products"
 
     id = db.Column(db.Integer, primary_key=True)
+    mediaused_id = db.Column(db.Integer, db.ForeignKey('mediaused.id'))
     name = db.Column(db.String(250), nullable=False, unique=True)
     instock = db.Column(db.Integer, default=0)
     desciption = db.Column(db.Text, nullable=True)
@@ -23,6 +24,7 @@ class ProductPrice(db.Model):
     __tablename__ = "productprice"
 
     id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
     price = db.Column(db.Float, nullable=False, default=0.0)
     isspecial = db.Column(db.Boolean, default=False)
     specialdateStart = db.Column(db.DateTime(timezone=True), nullable=True)

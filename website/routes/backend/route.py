@@ -1,14 +1,24 @@
 from website.app import db
-from flask import render_template, request,redirect, url_for
+import email_validator
+from flask import Blueprint,render_template, request,redirect, url_for
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import check_password_hash
-
+from flask_wtf import FlaskForm
+from wtforms import SubmitField, EmailField, PasswordField
+from wtforms.validators import DataRequired, Email
 from website.models.users import User
-from . import editlogin, BackendLoginForm
 
+#Login Form
+class BackendLoginForm(FlaskForm):
+    email = EmailField("Email", validators=[Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Login")
+
+
+#route
+editlogin = Blueprint('editlogin', __name__, template_folder="templates", url_prefix='/edit')
 
 @editlogin.route('/', methods=["GET", "POST"])
-
 def index():
     loginform = BackendLoginForm()
 
@@ -29,7 +39,6 @@ def index():
                 return redirect(url_for('modules.index'))
 
     return  render_template("login.html", form=loginform)
-
 
 @editlogin.route('/logout')
 @login_required

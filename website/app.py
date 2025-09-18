@@ -43,16 +43,13 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        from website.models.users import User
+        from website.models.users import addAdminAccount, User
+        from website.models.modules import addModules
 
-        if not User.query.filter_by(email="admin@example.com").first():
-            admin = User(username="admin", email="admin@example.com")
-            admin.set_password("admin123")
-            db.session.add(admin)
-            db.session.commit()
-            print("Admin user created: admin@example.com / admin123")
-        else:
-            print("Admin already exists.")
+        addAdminAccount()
+        addModules()
+
+        
 
     login_manager = LoginManager()
     login_manager.login_view = 'editlogin.index'

@@ -19,3 +19,14 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
+
+
+def addAdminAccount():
+    if not User.query.filter_by(email="admin@example.com").first():
+        admin = User(username="admin", email="admin@example.com")
+        admin.set_password("admin123")
+        db.session.add(admin)
+        db.session.commit()
+        print("Admin user created: admin@example.com / admin123")
+    else:
+        print("Admin already exists.")

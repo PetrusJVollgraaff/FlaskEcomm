@@ -112,6 +112,7 @@ class MediaManager {
   }
 
   #uploadMedia(files) {
+    var _ = this;
     const formData = new FormData();
     for (const file of files) {
       formData.append("images", file);
@@ -128,7 +129,21 @@ class MediaManager {
       }
     )
       .then((text) => JSON.parse(text))
-      .then((response) => console.log(response));
+      .then((response) => {
+        if (response.status == "success") {
+          response.images.forEach((obj) => {
+            _.#Imgs.push(
+              new Media({ elmP: _.#Elm, obj }, (data) => {
+                if (data.action == "delete") {
+                  _.#removeImage(data.id);
+                }
+              })
+            );
+          });
+        } else {
+          alert(response.message);
+        }
+      });
   }
 
   #eventListener() {
@@ -138,11 +153,11 @@ class MediaManager {
 
     this.#FileInput.addEventListener("change", (evt) => {
       this.#uploadMedia(evt.target.files);
+      this.#FileInput.value = "";
     });
   }
 }
 
 document.addEventListener("DOMContentLoaded", (evt) => {
   new MediaManager();
-  console.log("hello wolrd");
 });

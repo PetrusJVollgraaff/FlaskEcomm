@@ -348,6 +348,49 @@ class AlertPopup {
   }
 }
 
+class MediaSelector {
+  #medias = [];
+  #elmP;
+  #settings = {
+    onSelect: () => {},
+    onBeforeOpen: () => {},
+    onOpen: () => {},
+    multiSelect: false,
+    selectedItems: null,
+    maxItems: 20,
+    hideUpload: true,
+    showExt: ["jpg", "jpeg", "png", "gif", "webp"],
+  };
+  constructor({ elm, options }) {
+    this.#elmP;
+    this.#settings = {
+      ...this.#settings,
+      ...options,
+    };
+    this.#init();
+  }
+
+  #init() {
+    $(this.#elmP)
+      .off("click tap")
+      .on("click tap", this.#clickedOnThis.bind(this));
+  }
+
+  #getMedia() {
+    var _ = this;
+    fetch("/modules/mediamanager/getmedias")
+      .then((response) => response.json())
+      .then((response) => {
+        _.#medias = response;
+      });
+  }
+
+  #clickedOnThis(evt) {
+    var _ = this;
+    _.#getMedia();
+  }
+}
+
 /** Create a DOM Element
  * @param {string} type - Type of DOM element, eg. 'div', 'input', etc...
  * @param {Array<{ key: string, value: string }>} attributes - Attributes of the element, eg. 'onchange', 'title', etc...

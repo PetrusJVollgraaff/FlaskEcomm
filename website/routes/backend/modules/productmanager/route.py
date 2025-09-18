@@ -1,5 +1,29 @@
-from flask import jsonify, render_template, request
-from . import productmanager, ProductForm
+import os
+from website.app import db
+from flask import Blueprint,jsonify, render_template, request
+from sqlalchemy import text
+from flask_wtf import FlaskForm
+from wtforms import StringField, FloatField, DateField, TextAreaField, BooleanField, IntegerField
+from wtforms.validators import DataRequired, Length, NumberRange
+from datetime import date, timedelta
+
+class ProductForm(FlaskForm):
+
+    mindate = date.today()+ timedelta(days=1)
+
+    product_id = IntegerField("Product id", validators=[DataRequired(), NumberRange(min=0)])
+    product_name = StringField("Product Name", validators=[DataRequired(), Length(1,200)])
+    product_code = StringField("Product Code", validators=[DataRequired(), Length(1,200)])
+    product_decription = TextAreaField("Product Description")
+    product_stock = IntegerField("Product in stock", validators=[DataRequired(), NumberRange(min=0)])
+    product_show = BooleanField("Show on site")
+    product_special = BooleanField("Product on special")
+
+    price_normal = FloatField('Price', validators=[DataRequired(), NumberRange(min=0)], render_kw={"type" : "number"})
+    price_special = FloatField('Special Price', validators=[NumberRange(min=0)], render_kw={"type" : "number"})
+    special_datestart = DateField("Special Date Start", format="%Y/%m/%d", default=mindate, render_kw={"min" : mindate })
+    special_dateend = DateField("Special Date End", format="%Y/%m/%d", default=date.today()+ timedelta(days=3), render_kw={"min" : mindate + timedelta(days=1)})
+    
 
 products = [
   {
@@ -11,6 +35,15 @@ products = [
 ]
 
 #route
+productmanager = Blueprint(
+    'productmanager', 
+    __name__, 
+    template_folder="templates", 
+    url_prefix='/productmanager',
+    static_folder='static'
+)
+
+
 @productmanager.route('/', methods=["GET"])
 def index():
     return  render_template("productmanager.html")
@@ -19,6 +52,29 @@ def index():
 @productmanager.route('/getproducts', methods=["GET"])
 def getproducts():
     if request.method == "GET":
+        sql = text("""
+                    SELECT 
+                        P.id, 
+                        P.name, 
+                        P.onspecial,
+                        P.showonline,
+                        img
+                    FROM products P
+                    WHERE P.deleted_yn = 0 
+                    OUTER APPLY(
+                        SELECT 
+                            M.id AS 'imgid', 
+                            MU.id AS 'imgusedid',
+                            '/static/images/'|| M.name ||'/thumb'|| M.ext AS path 
+                        FROM mediaused MU
+                        JOIN medias M ON M.id = MU.media_id
+                        WHERE M.deleted_yn=0 AND MU.deleted_yn=0 AND MU.id = P.mediaused_id 
+                   )img   
+                   
+                """)
+        #result = db.session.execute(sql)
+        #results_as_dict = [dict(row) for row in result.mappings()]
+        
         return jsonify(products)
 
 @productmanager.route('/getproduct', methods=["POST"])
