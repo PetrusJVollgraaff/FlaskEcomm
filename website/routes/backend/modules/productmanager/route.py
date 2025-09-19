@@ -188,13 +188,12 @@ def productEdit(productid):
         if not form.validate_on_submit():
             return jsonify({ "status": "error", "message": "Product could not be updated", "reason": form.errors }), 500
         
-        """
         sqlproduct = text('''
-                        UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 
-                          [onspecial]=:onspecial, [showonline]=:showonline
-                        WHERE id=:id
-                        RETURNING id;
-                    ''')
+                UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 
+                    [onspecial]=:onspecial, [showonline]=:showonline
+                WHERE id=:id
+                RETURNING id;
+            ''')
 
         result = db.session.execute(sqlproduct, 
                                     {
@@ -209,7 +208,7 @@ def productEdit(productid):
                                     )
         row_product = result.fetchone()
         db.session.commit()                 
-        """
+        
         return jsonify({ "status": "success", "message": "product is updated" }), 200
         
     return render_template('productform.html', form=form)

@@ -85,7 +85,6 @@ def addmedia():
 
 @mediamanager.route('/removemedia', methods=["DELETE"])
 def removemedia():
-    print("heloo")
     if request.method == "DELETE":
         data = request.get_json()  # Get the JSON body
         media_id = data.get("id")  # Access your id
@@ -99,7 +98,10 @@ def removemedia():
         row = result.fetchone()
         db.session.commit()
        
-        return jsonify({"status": "success", "message": "images are removes"}), 200
+        if (row):
+            return jsonify({"status": "success", "message": "images are removes"}), 200
+        else:
+            return jsonify({"status": "error", "message": "Somthing went wrong, please try again later."}), 200    
     return jsonify({"status": "error", "message": "Not Supported"}), 400
 
 
