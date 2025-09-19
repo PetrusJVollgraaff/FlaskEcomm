@@ -1,4 +1,6 @@
 # Flask Ecommerce
+Using Python Flask to create an Online Shopping site
+
 
 create and start Virtual Enviroment
 
