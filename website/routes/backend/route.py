@@ -1,3 +1,4 @@
+from datetime import timedelta
 from website.app import db
 import email_validator
 from flask import Blueprint,render_template, request,redirect, url_for
@@ -21,20 +22,25 @@ editlogin = Blueprint('editlogin', __name__, template_folder="templates", url_pr
 @editlogin.route('/', methods=["GET", "POST"])
 def index():
     loginform = BackendLoginForm()
-
+    
+    #if request.method == 'GET':
+    #    if(current_user):
+    #        return redirect(url_for('modules.index'))
+    
     if request.method == 'POST' and loginform.validate_on_submit():
         email = loginform.email.data
         password = loginform.password.data
         
         backenduser = User.query.filter_by(email=email).first()
-        print(backenduser)
+
         if backenduser:
             if check_password_hash(backenduser.password, password):
                 '''user_log = UserStatusLog( user_id=user.id, status="online")
                 db.session.add(user_log)
                 db.session.commit()'''
+                REMEMBER_COOKIE_DURATION = timedelta(minutes=60)
                 
-                login_user(backenduser, remember=False)
+                login_user(backenduser, remember=False, duration=REMEMBER_COOKIE_DURATION)
                 loginform.password.data = ''
                 return redirect(url_for('modules.index'))
 

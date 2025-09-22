@@ -2,4 +2,11 @@
 {% block title %}Cart{% endblock %}
 {% block content%}
 <h1>Cart</h1>
+
+{% if 'cart' in session%}
+{% for cart in session.cart %}
+<p>Hello wolrd</p>
+{% endfor %}
+{%endif%}
+
 {% endblock %}
