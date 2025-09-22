@@ -1,4 +1,5 @@
 {% extends 'frontendbase.html' %}
+{% block title %}Product List{% endblock %}
 {% block content%}
 <h1>Products</h1>
 
@@ -12,7 +13,9 @@
         ${{product.normalprice}}
     </div>
     <button type="button"
-        onclick="window.location.href='{{ url_for('views.productpages.product', product_id=product.id) }}'">View</button>
+        onclick="window.location.href='{{ url_for('views.productpages.product', product_id=product.id) }}'">
+        View
+    </button>
 </div>
 {% endfor %}
 
