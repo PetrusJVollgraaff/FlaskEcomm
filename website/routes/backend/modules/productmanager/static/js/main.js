@@ -95,6 +95,14 @@ class ProductEditor {
 
   #CheckFieldValid() {
     this.#formValid = true;
+    const specialcheckbox = Array.from(this.#formELm.elements).find(
+      (field) => field.name == "product_special"
+    );
+
+    const specialprice = Array.from(this.#formELm.elements).find(
+      (field) => field.name == "product_special"
+    );
+
     for (let field of this.#formELm.elements) {
       var objData = this.#checkValidArr.find((obj) => obj.name == field.name);
       if (field.willValidate && !field.checkValidity()) {
@@ -111,6 +119,15 @@ class ProductEditor {
         });
         break;
       }
+    }
+
+    if (this.#formValid && specialcheckbox.checked && specialprice.value == 0) {
+      specialprice.focus();
+      new AlertPopup({
+        title: "Warning",
+        overlayer: true,
+        content: `Please provide a special price.`,
+      });
     }
 
     if (this.#formValid && this.#mainMediaid == 0) {

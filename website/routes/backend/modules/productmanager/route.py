@@ -8,7 +8,10 @@ from wtforms.validators import DataRequired, Length, NumberRange, InputRequired
 from datetime import date, timedelta
 
 mindate = date.today()+ timedelta(days=1)
-#Product Create/Edit Form
+
+#########################################
+####### Product Create/Edit Form ########
+#########################################
 class ProductForm(FlaskForm):
     
     product_id = IntegerField("Product id", validators=[InputRequired(), NumberRange(min=0)])
@@ -44,8 +47,9 @@ LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
 WHERE P.deleted_yn = 0 
 '''
 
-
-#route
+#########################################
+################ ROUTES #################
+#########################################
 productmanager = Blueprint(
     'productmanager', 
     __name__, 
@@ -121,16 +125,31 @@ def productEdit(productid):
                     P.instock,
                     P.onspecial,
                     P.showonline,
+                    
+                    --product main image
                     IFNULL(M.id, 0) AS imgid,
                     IFNULL(MU.id, 0) AS imgusedid,
                     CASE 
                         WHEN M.id IS NOT NULL THEN
                             '/static/images/'|| M.name ||'/thumb'|| M.ext
                         ELSE ''
-                    END AS imgpath
+                    END AS imgpath,
+                    
+                    --product normal prices
+                    IFNULL(PP1.id, 0) AS normalpriceid,
+                    IFNULL(PP1.price, 0.00) as normalprice,
+               
+                    --product special prices
+                    IFNULL(PP2.id, 0) AS specialpriceid,
+                    IFNULL(PP2.price, 0.00) as specialprice,
+                    PP2.specialdateStart,
+                    PP2.specialdateEnd
+
                 FROM products AS P
                 LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
                 LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
+                LEFT JOIN productprice PP1 ON PP1.product_id = P.id AND PP1.isspecial=0 AND PP1.deleted_yn = 0
+                LEFT JOIN productprice PP2 ON PP2.product_id = P.id AND PP2.isspecial=1 AND PP2.deleted_yn = 0
                 WHERE P.deleted_yn = 0 AND P.id=:productid
             """)
     result = db.session.execute(sql, {"productid": productid})
@@ -151,12 +170,18 @@ def productEdit(productid):
         form.product_special.data = results["onspecial"] == 1
         form.product_show.data = results["showonline"] == 1  
         
-    
+        form.price_normal.data = results["normalprice"]
+        
+        if results["onspecial"] == 1:
+            form.price_special.data = results["specialprice"]
+            form.special_datestart.data = results["specialdateStart"]
+            form.special_dateend.data = results["specialdateEnd"]
+            
     if request.method == 'PUT':
         if not form.validate_on_submit():
             return jsonify({ "status": "error", "message": "Product could not be updated", "reason": form.errors }), 500
     
-        UpdateProduct(form, results["imgid"], results["imgusedid"])
+        UpdateProduct(form, results["imgid"], results["imgusedid"], results["normalprice"], results["specialprice"])
 
         product = getProductJSON(productid)          
         
@@ -165,6 +190,10 @@ def productEdit(productid):
     return render_template('productform.html', form=form, mainImgPath=mainImgPath)
 
 
+#########################################
+############### Functions ###############
+#########################################
+
 def getProductJSON(productid):
     sql = text(getProductMiniData + " AND P.id=:productid")
     result = db.session.execute(sql, {"productid": productid})
@@ -172,6 +201,7 @@ def getProductJSON(productid):
     product = setProductJSON(row) 
     
     return product
+
 
 def setProductJSON(row):
     return {
@@ -184,10 +214,9 @@ def setProductJSON(row):
                 }
             }
 
-###### ADD NEW PRODUCT DATA ###########
+########### ADD NEW PRODUCT DATA ###########
 #Add New Product Image
 def AddImg(form):
-    print("world")
     sqlimg = text('''
                 INSERT INTO mediaused ([media_id], [order], [function_as], [create_at], [deleted_yn])
                 VALUES (:imgid, 0, "main product image", CURRENT_TIMESTAMP, 0)
@@ -200,10 +229,27 @@ def AddImg(form):
 
     return row_mediaused.id
 
+#Add New Product Prices
+def AddNewPrice(productid, form):
+    sqlnewprice1 =text('''
+        INSERT INTO productprice ([product_id], [price], [isspecial], [create_at], [deleted_yn])
+        VALUES(:productid, :price, 0, CURRENT_TIMESTAMP, 0)
+    ''')
+    db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_normal.data, })        
+    db.session.commit()
+
+#Add New Product Special Prices
+def AddNewSpecialPrice(productid, form):
+    if form.product_special.data:
+        sqlnewprice1 =text('''
+            INSERT INTO productprice ([product_id], [price], [isspecial], [specialdataStart], [specialdataEnd] [create_at], [deleted_yn])
+            VALUES(:productid, :price, 1, :datestart, dateend CURRENT_TIMESTAMP, 0)
+        ''')
+        db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_normal.data, })        
+        db.session.commit()
+
 #Add New Product
 def AddNewProduct(form):
-    print("hello")
-
     mediausedId = AddImg(form)
 
     sqlproduct = text('''
@@ -226,15 +272,16 @@ def AddNewProduct(form):
     row_product = result.fetchone()
     db.session.commit()   
 
-    print(row_product)
-
     if row_product[0] > 0:
+        AddNewPrice(row_product[0], form)  
+        AddNewSpecialPrice(row_product[0], form) 
+        
         return row_product[0]
     else:
         return 0       
 
 
-###### UPDATE PRODUCT DATA ###########
+########### UPDATE PRODUCT DATA ###########
 # Update Existing Product Image
 def ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid):
     usedimgid = oldimgusedid
@@ -260,10 +307,75 @@ def ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid):
     
     return usedimgid
 
+#Update Existsing Product Prices
+def ReplaceExistingPrice(productid, form, curnormprice):
+    if form.price_normal.data != curnormprice:
+        sqlnewprice1 =text('''
+                INSERT INTO productprice ([product_id], [price], [isspecial], [create_at], [deleted_yn])
+                SELECT :productid, :price, 0, CURRENT_TIMESTAMP, 0
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM products AS P
+                    LEFT JOIN productprice PP1 ON PP1.product_id = P.id AND PP1.isspecial=0 AND PP1.deleted_yn = 0
+                    WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(PP1.price, 0)=:price
+                )
+                RETURNING id;
+            ''')
+        results = db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_normal.data, })
+        row = results.fetchone()
+        
+        db.session.commit()  
+
+        sql =text('''
+                UPDATE productprice SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+                WHERE product_id = :productid AND isspecial=0 AND deleted_yn = 0 AND id!=:id
+            ''')
+        db.session.execute(sql, {"productid": productid, "price": form.price_normal.data, "id": row[0] })
+        db.session.commit()  
+
+#Update Existsing Product Special Prices
+def ReplaceExistingSpecialPrice(productid, form, curspecialprice):
+    if form.product_special.data:
+
+        if form.price_special.data != curspecialprice:
+            sqlnewprice1 =text('''
+                    INSERT INTO productprice ([product_id], [price], [isspecial], [specialdataStart], [specialdataEnd] [create_at], [deleted_yn])
+                    SELECT :productid, :price, 1, :datestart, dateend CURRENT_TIMESTAMP, 0
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM products AS P
+                        LEFT JOIN productprice PP1 ON PP1.product_id = P.id AND PP1.isspecial=1 AND PP1.deleted_yn = 0
+                        WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(PP1.price, 0)=:price
+                    )
+                    RETURNING id;
+                ''')
+            results = db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_special.data, "datestart": form.special_datestart, "dateend": form.special_dateend})
+            row = results.fetchone()
+            
+            db.session.commit()  
+
+            sql =text('''
+                    UPDATE productprice SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+                    WHERE product_id = :productid AND isspecial=1 AND deleted_yn = 0 AND id!=:id
+                ''')
+            db.session.execute(sql, {"productid": productid, "price": form.price_normal.data, "id": row[0] })
+            db.session.commit()  
+
+    else:
+        sql =text('''
+                    UPDATE productprice SET [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+                    WHERE product_id=:productid AND isspecial=1 AND deleted_yn = 0
+                ''')
+        db.session.execute(sql, {"productid": productid, "price": form.price_normal.data })
+        db.session.commit()
+
+
 # Update Existing Product
-def UpdateProduct(form, curimgid, curimgusedid):
+def UpdateProduct(form, curimgid, curimgusedid, curnormprice, curspecialprice):
 
     usedimgid = ReplaceExistingImg(form.product_id.data, form.main_mediaid.data, curimgid, curimgusedid)
+    ReplaceExistingPrice(form.product_id.data, form, curnormprice)
+    ReplaceExistingSpecialPrice(form.product_id.data, form, curspecialprice)
 
     found = False
     
