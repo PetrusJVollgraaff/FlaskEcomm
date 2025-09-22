@@ -1,4 +1,22 @@
 {% extends 'frontendbase.html' %}
 {% block content%}
-<h1>Product</h1>
+<div>
+    <div class="">
+        <img src="{{product.imgpath}}" alt="">
+    </div>
+    <div>
+        <h1>{{product.name}}</h1>
+        <p>{{product.description}}</p>
+    </div>
+    <div>
+        <div>
+            <input type="number" name="" id="" min="0" value="1">
+        </div>
+        <button type="button">Add to Cart</button>
+    </div>
+</div>
+
+
+
+
 {% endblock %}
