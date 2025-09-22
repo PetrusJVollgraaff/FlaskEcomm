@@ -10,8 +10,6 @@ from PIL import Image
 UPLOAD_ROOT = os.path.join(os.getcwd(), "website", "public", "images")
 os.makedirs(UPLOAD_ROOT, exist_ok=True)
 
-#print(BASE_DIR)
-
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
 

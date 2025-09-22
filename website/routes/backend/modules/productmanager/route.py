@@ -11,30 +11,39 @@ mindate = date.today()+ timedelta(days=1)
 #Product Create/Edit Form
 class ProductForm(FlaskForm):
     
-    product_id = IntegerField("Product id", validators=[NumberRange(min=0)])
+    product_id = IntegerField("Product id", validators=[InputRequired(), NumberRange(min=0)])
     product_name = StringField("Product Name", validators=[DataRequired(), Length(1,200)])
     product_code = StringField("Product Code", validators=[DataRequired(), Length(1,200)])
     product_decription = TextAreaField("Product Description")
-    product_stock = IntegerField("Product in stock", validators=[DataRequired(), NumberRange(min=0)])
+    product_stock = IntegerField("Product in stock", validators=[InputRequired(), NumberRange(min=0)])
     product_show = BooleanField("Show on site")
     product_special = BooleanField("Product on special")
+    main_mediaid = IntegerField("Image id", validators=[InputRequired(), NumberRange(min=0)], render_kw={"hidden" : True})
 
     price_normal = FloatField('Price', validators=[InputRequired(), NumberRange(min=0)], render_kw={"type" : "number"}, default=0)
     price_special = FloatField('Special Price', validators=[NumberRange(min=0)], render_kw={"type" : "number"}, default=0)
     special_datestart = DateField("Special Date Start", format="%Y-%m-%d", default=mindate, render_kw={"min" : mindate })
     special_dateend = DateField("Special Date End", format="%Y-%m-%d", default=date.today()+ timedelta(days=3), render_kw={"min" : mindate + timedelta(days=1)})
-    
-    #main_imgid = IntegerField("Product id", validators=[InputRequired(), NumberRange(min=0)])
 
 
-products = [
-  {
-    "id": 1, "name": "Product One", "image": { "id": 1, "path": "/static/images/img1/thumbs.png"},
-  },
-  {
-    "id": 2, "name": "Product Two", "image": { "id": 2, "path": "/static/images/img2/thumbs.jpg",},
-  },
-]
+getProductMiniData = '''
+SELECT 
+    P.id, 
+    P.name, 
+    P.onspecial,
+    P.showonline,
+    CASE 
+        WHEN M.id IS NOT NULL THEN
+            '/static/images/'|| M.name ||'/thumb'|| M.ext
+        ELSE ''
+    END AS path 
+
+FROM products AS P
+LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
+LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
+WHERE P.deleted_yn = 0 
+'''
+
 
 #route
 productmanager = Blueprint(
@@ -54,37 +63,13 @@ def index():
 @productmanager.route('/getproducts', methods=["GET"])
 def getproducts():
     if request.method == "GET":
-        sql = text("""
-                    SELECT 
-                        P.id, 
-                        P.name, 
-                        P.onspecial,
-                        P.showonline,
-                        CASE 
-                            WHEN M.id IS NOT NULL THEN
-                                '/static/images/'|| M.name ||'/thumb'|| M.ext
-                            ELSE ''
-                        END AS path 
-
-                    FROM products AS P
-                    LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
-                    LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
-                    WHERE P.deleted_yn = 0 
-                """)
+        sql = text(getProductMiniData)
         result = db.session.execute(sql)
         results = result.mappings().all()
         
         products = []
         for row in results:
-            products.append({
-                "id": row["id"],
-                "name": row["name"],
-                "onspecial": row["onspecial"],
-                "showonline": row["showonline"],
-                "image": {
-                    "path": row["path"]
-                }
-            })
+            products.append(setProductJSON(row))
 
         return jsonify(products)
 
@@ -110,38 +95,14 @@ def productAdd():
         if not form.validate_on_submit():
             return jsonify({ "status": "error", "message": "Product could not be created", "reason": form.errors }), 500
         
-        sqlimg = text('''
-                INSERT INTO mediaused ([media_id], [order], [function_as], [create_at], [deleted_yn])
-                VALUES (:imgid, 0, "main product image", CURRENT_TIME, 0)
-                RETURNING id;
-            ''')
+        product_id = AddNewProduct(form)
 
-        result = db.session.execute(sqlimg, {"imgid": 1})
-        row_mediaused = result.fetchone()
-        db.session.commit()
-    
-        sqlproduct = text('''
-                        INSERT INTO products([mediaused_id], [name], [instock], [description], [code], [onspecial], [showonline], [create_at], [deleted_yn])
-                        VALUES (:imgusedid, :name, :instock, :descript, :code, :onspecial, :showonline, CURRENT_TIME, 0)
-                          RETURNING id;
-                    ''')
+        if product_id > 0:
+            product = getProductJSON(product_id)
 
-        result = db.session.execute(sqlproduct, 
-                                    {
-                                        "imgusedid": row_mediaused.id, 
-                                        "name": form.product_name.data,
-                                        "descript": form.product_decription.data,
-                                        "code": form.product_code.data,  
-                                        "instock": form.product_stock.data,
-                                        "onspecial": 1 if form.product_special.data else 0,
-                                        "showonline": 1 if form.product_show.data else 0,
-                                    }
-                                    )
-        row_product = result.fetchone()
-        db.session.commit()                 
-
-
-        return jsonify({ "status": "success", "message": "product is added" })
+            return jsonify({ "status": "success", "message": "Product is added", "product": product }), 200
+        
+        return jsonify({ "status": "error", "message": "Somthing went wrong, Product could not be created", "reason": form.errors }), 500
     
     return render_template('productform.html', form=form)
 
@@ -150,6 +111,7 @@ def productAdd():
 @productmanager.route("/productfield/<int:productid>", methods=["GET", "PUT"])
 def productEdit(productid):
     form = ProductForm() 
+    mainImgPath = ""
     sql = text("""
                 SELECT 
                     P.id, 
@@ -159,11 +121,13 @@ def productEdit(productid):
                     P.instock,
                     P.onspecial,
                     P.showonline,
+                    IFNULL(M.id, 0) AS imgid,
+                    IFNULL(MU.id, 0) AS imgusedid,
                     CASE 
                         WHEN M.id IS NOT NULL THEN
                             '/static/images/'|| M.name ||'/thumb'|| M.ext
                         ELSE ''
-                    END AS path
+                    END AS imgpath
                 FROM products AS P
                 LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
                 LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
@@ -179,23 +143,138 @@ def productEdit(productid):
         form.product_name.data = results["name"]
         form.product_decription.data = results["description"]
         form.product_code.data = results["code"]
-    
+
+        form.main_mediaid.data = results["imgid"]
+        mainImgPath = results["imgpath"]
+
         form.product_stock.data = results["instock"]
         form.product_special.data = results["onspecial"] == 1
-        form.product_show.data = results["showonline"] == 1   
+        form.product_show.data = results["showonline"] == 1  
+        
     
     if request.method == 'PUT':
         if not form.validate_on_submit():
             return jsonify({ "status": "error", "message": "Product could not be updated", "reason": form.errors }), 500
+    
+        UpdateProduct(form, results["imgid"], results["imgusedid"])
+
+        product = getProductJSON(productid)          
         
-        sqlproduct = text('''
+        return jsonify({ "status": "success", "message": "product is updated", "product": product }), 200
+        
+    return render_template('productform.html', form=form, mainImgPath=mainImgPath)
+
+
+def getProductJSON(productid):
+    sql = text(getProductMiniData + " AND P.id=:productid")
+    result = db.session.execute(sql, {"productid": productid})
+    row = result.mappings().fetchone()     
+    product = setProductJSON(row) 
+    
+    return product
+
+def setProductJSON(row):
+    return {
+                "id": row["id"],
+                "name": row["name"],
+                "onspecial": row["onspecial"],
+                "showonline": row["showonline"],
+                "image": {
+                    "path": row["path"]
+                }
+            }
+
+###### ADD NEW PRODUCT DATA ###########
+#Add New Product Image
+def AddImg(form):
+    print("world")
+    sqlimg = text('''
+                INSERT INTO mediaused ([media_id], [order], [function_as], [create_at], [deleted_yn])
+                VALUES (:imgid, 0, "main product image", CURRENT_TIMESTAMP, 0)
+                RETURNING id;
+            ''')
+
+    result = db.session.execute(sqlimg, {"imgid": form.main_mediaid.data})
+    row_mediaused = result.fetchone()
+    db.session.commit()
+
+    return row_mediaused.id
+
+#Add New Product
+def AddNewProduct(form):
+    print("hello")
+
+    mediausedId = AddImg(form)
+
+    sqlproduct = text('''
+                        INSERT INTO products([mediaused_id], [name], [instock], [description], [code], [onspecial], [showonline], [create_at], [deleted_yn])
+                        VALUES (:imgusedid, :name, :instock, :descript, :code, :onspecial, :showonline, CURRENT_TIMESTAMP, 0)
+                          RETURNING id;
+                    ''')
+
+    result = db.session.execute(sqlproduct, 
+                                {
+                                    "imgusedid": mediausedId, 
+                                    "name": form.product_name.data,
+                                    "descript": form.product_decription.data,
+                                    "code": form.product_code.data,  
+                                    "instock": form.product_stock.data,
+                                    "onspecial": 1 if form.product_special.data else 0,
+                                    "showonline": 1 if form.product_show.data else 0
+                                }
+                                )
+    row_product = result.fetchone()
+    db.session.commit()   
+
+    print(row_product)
+
+    if row_product[0] > 0:
+        return row_product[0]
+    else:
+        return 0       
+
+
+###### UPDATE PRODUCT DATA ###########
+# Update Existing Product Image
+def ReplaceExistingImg(productid, newimgid, oldimgid, oldimgusedid):
+    usedimgid = oldimgusedid
+    
+    if newimgid != oldimgid:
+            sqlnewimg =text('''
+                INSERT INTO mediaused ([media_id], [order], [function_as], [create_at], [deleted_yn])
+                SELECT :imgid, 0, 'main product image', CURRENT_TIMESTAMP, 0
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM products AS P
+                    LEFT JOIN mediaused MU ON MU.id = P.mediaused_id AND MU.deleted_yn=0
+                    LEFT JOIN medias M ON M.id = MU.media_id AND M.deleted_yn=0
+                    WHERE P.deleted_yn = 0 AND P.id=:productid AND IFNULL(M.id, 0)=:imgid
+                )
+                RETURNING id;
+            ''')
+            results = db.session.execute(sqlnewimg, {"productid": productid, "imgid": newimgid})
+            row = results.fetchone()
+            
+            usedimgid = row[0]
+            db.session.commit()       
+    
+    return usedimgid
+
+# Update Existing Product
+def UpdateProduct(form, curimgid, curimgusedid):
+
+    usedimgid = ReplaceExistingImg(form.product_id.data, form.main_mediaid.data, curimgid, curimgusedid)
+
+    found = False
+    
+    sqlproduct = text('''
                 UPDATE products SET [name]=:name, [instock]=:instock, [description]=:descript, [code]=:code, 
-                    [onspecial]=:onspecial, [showonline]=:showonline
+                    [onspecial]=:onspecial, [showonline]=:showonline, [mediaused_id]=:mediausedid
                 WHERE id=:id
                 RETURNING id;
             ''')
 
-        result = db.session.execute(sqlproduct, 
+    result = db.session.execute(sqlproduct, 
                                     {
                                         "id": form.product_id.data, 
                                         "name": form.product_name.data,
@@ -204,11 +283,21 @@ def productEdit(productid):
                                         "instock": form.product_stock.data,
                                         "onspecial": 1 if form.product_special.data else 0,
                                         "showonline": 1 if form.product_show.data else 0,
+                                        "mediausedid": usedimgid
                                     }
                                     )
-        row_product = result.fetchone()
-        db.session.commit()                 
-        
-        return jsonify({ "status": "success", "message": "product is updated" }), 200
-        
-    return render_template('productform.html', form=form)
+    row_product = result.fetchone()
+    db.session.commit()
+
+    if usedimgid != curimgusedid:
+        sqlusedimg =text('''
+                UPDATE mediaused SET  [deleted_yn] = 1, [deleted_at]=CURRENT_TIMESTAMP
+                WHERE id=:id
+            ''')
+        db.session.execute(sqlusedimg, {"id": curimgusedid})
+        db.session.commit()
+
+    if(row_product):
+        found = True
+
+    return found

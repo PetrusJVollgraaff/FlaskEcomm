@@ -11,6 +11,7 @@ body {
 body > nav {
   flex-basis: 300px;
   background-color: aliceblue;
+  min-width: 300px;
 }
 body > main {
   flex-basis: auto;

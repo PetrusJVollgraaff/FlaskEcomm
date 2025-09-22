@@ -60,7 +60,6 @@ class Modal {
   #loadContent(fallback) {
     if (this?.popupEl) {
       var contentCtn = this.popupEl.getElementsByClassName("content_ctn");
-      console.log(this.settings.content);
       if (this.settings.content) {
         switch (typeof this.settings.content) {
           case "string":
@@ -82,7 +81,6 @@ class Modal {
               method: "POST",
               body: JSON.stringify(this.settings.ajaxData),
               headers: {
-                //"Content-Type": "application/x-www-form-urlencoded ",
                 "Content-Type": "application/json",
               },
             });
@@ -199,7 +197,6 @@ class Modal {
       this.settings.onClose();
     }
 
-    console.log(this.popupEl);
     this.popupEl.remove();
   }
 
@@ -239,6 +236,8 @@ class AlertPopup {
         autoOpen: true,
         overlayer: false,
         position: "center",
+        autoClose: false,
+        timer: 1000,
       },
       ...options,
     };
@@ -355,15 +354,19 @@ class AlertPopup {
         this.settings.onOpen(this);
       }
     });
+
+    if (this.settings.autoClose) {
+      setTimeout(() => {
+        this.close();
+      }, this.settings.timer);
+    }
   }
 
   close() {
-    console.log(this);
     if (this.settings?.onClose && typeof this.settings?.onClose == "function") {
       this.settings.onClose();
     }
 
-    console.log(this.popupEl);
     this.popupEl.remove();
   }
 }
@@ -372,10 +375,11 @@ class MediaSelectorItem {
   #elmP;
   #elm;
   #data = {};
+  #callback;
   constructor({ elmP, data }, callback = () => {}) {
     this.#elmP = elmP;
     this.#data = { ...this.#data, ...data };
-
+    this.callback = callback;
     this.#init();
   }
 
@@ -391,6 +395,13 @@ class MediaSelectorItem {
     );
 
     this.#elmP.appendChild(this.#elm);
+    this.#eventListener();
+  }
+
+  #eventListener() {
+    this.#elm.addEventListener("click", () => {
+      this.callback(this.#data);
+    });
   }
 }
 
@@ -400,6 +411,7 @@ class MediaSelector {
   #popElm;
   #elmP;
   #mainBody;
+  #multselect = [];
   #settings = {
     onSelect: () => {},
     onBeforeOpen: () => {},
@@ -410,15 +422,15 @@ class MediaSelector {
     hideUpload: true,
     showExt: ["jpg", "jpeg", "png", "gif", "webp"],
   };
-  constructor({ elm, options }) {
+  #callback;
+  constructor({ elm, options }, callback = () => {}) {
     this.#elmP = elm;
     this.#settings = {
       ...this.#settings,
       ...options,
     };
+    this.#callback = callback;
     this.#init();
-
-    console.log("Hello");
   }
 
   #init() {
@@ -437,25 +449,24 @@ class MediaSelector {
 
   #appendMedia() {
     this.#medias.forEach((obj) => {
-      console.log(obj);
       this.#mediasArr.push(
-        new MediaSelectorItem({ elmP: this.#mainBody, data: obj }, (data) => {})
+        new MediaSelectorItem({ elmP: this.#mainBody, data: obj }, (data) => {
+          if (this.#settings.multiSelect) {
+            this.#multselect.push(data);
+          } else {
+            this.#callback(data);
+            this.#popElm.close();
+          }
+        })
       );
     });
-
-    console.log(this.#mediasArr);
   }
 
   #clickedOnThis(evt) {
     var _ = this;
-    console.log("helo");
 
     if (typeof _.#settings.onBeforeOpen == "function") {
-      _.#settings.onBeforeOpen(
-        _.#elmP,
-        //$(".mediaSelector").last().find(".mediaMainbody"),
-        _.#settings
-      );
+      _.#settings.onBeforeOpen(_.#elmP, _.#settings);
     }
 
     /**
@@ -488,14 +499,8 @@ class MediaSelector {
 
           setTimeout(function () {
             if (typeof _.#settings.onBeforeOpen == "function")
-              _.#settings.onBeforeOpen(
-                _.#elmP,
-                //$(".mediaSelector").last().find(".mediaMainbody"),
-                _.#settings
-              );
+              _.#settings.onBeforeOpen(_.#elmP, _.#settings);
           }, 1000);
-          console.log("world");
-
           _.#getMedia();
         },
         buttons: [

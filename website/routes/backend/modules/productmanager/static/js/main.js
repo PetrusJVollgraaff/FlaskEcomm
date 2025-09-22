@@ -3,6 +3,7 @@ class ProductEditor {
   #formELm;
   #MainImgBtn;
   #modal;
+  #mainMediaid = 0;
   #formValid = true;
 
   #checkValidArr = [
@@ -60,6 +61,10 @@ class ProductEditor {
           var popupEl = modal.popupEl;
           _.#formELm = popupEl.querySelector("form");
           _.#MainImgBtn = popupEl.querySelector("#main_imgbtn");
+          _.#mainMediaid = Number(
+            popupEl.querySelector("input#main_mediaid").value
+          );
+          popupEl.querySelector("input#main_mediaid").remove();
           _.#setMediaSelector();
           _.#eventListener();
         },
@@ -71,7 +76,6 @@ class ProductEditor {
           {
             title: "Cancel",
             click: function (modal) {
-              console.log("123");
               modal.close();
             },
           },
@@ -108,10 +112,25 @@ class ProductEditor {
         break;
       }
     }
+
+    if (this.#formValid && this.#mainMediaid == 0) {
+      _.#MainImgBtn.focus();
+
+      new AlertPopup({
+        title: "Warning",
+        overlayer: true,
+        content: `Please select an Image.`,
+      });
+    }
   }
 
   #setMediaSelector() {
-    new MediaSelector({ elm: this.#MainImgBtn });
+    new MediaSelector({ elm: this.#MainImgBtn }, (data) => {
+      console.log(data);
+      this.#mainMediaid = data.id;
+      this.#MainImgBtn.setAttribute("title", data.name);
+      this.#MainImgBtn.style.backgroundImage = `url('${data.path}')`;
+    });
   }
 
   #eventListener() {
@@ -122,7 +141,10 @@ class ProductEditor {
       if (_.#formValid) {
         _.#modal.disablebtn();
         var formData = new FormData(_.#formELm);
-        if (this.#productID > 0) formData.append("product_id", this.#productID);
+        formData.append("product_id", this.#productID);
+
+        if (this.#mainMediaid > 0)
+          formData.append("main_mediaid", this.#mainMediaid);
 
         fetch(this.#ajaxUrl, {
           method: this.#productID > 0 ? "PUT" : "POST",
@@ -132,18 +154,36 @@ class ProductEditor {
           },
         })
           .then((response) => {
-            if (response.ok) {
-              return response.json();
-            }
-
-            const data = response.json();
+            console.log(response.ok);
+            if (response.ok) return response.json();
 
             // Create error manually and attach custom data
+            const data = response.json();
             const error = new Error(`Response status: ${response.status}`);
             error.data = data; // 👈 custom property
             throw error;
           })
-          .then((response) => console.log(response))
+          .then((response) => {
+            if (response.status == "success") {
+              _.#callback(response.product);
+              _.#modal.close();
+
+              new AlertPopup({
+                title: "Success",
+                overlayer: true,
+                content: "The Producted is Saved",
+                buttons: [],
+                autoClose: true,
+              });
+            } else {
+              _.#modal.enablebtn();
+              new AlertPopup({
+                title: "Error",
+                overlayer: true,
+                content: "The Producted could not be saved",
+              });
+            }
+          })
           .catch((err) => {
             console.error(err.message);
             //this.callback(err.data);
@@ -166,9 +206,25 @@ class Product {
   constructor({ elmP, obj }, callback = () => {}) {
     this.#ElmP = elmP;
     this.#Data = { ...obj };
+    this.id = this.#Data.id;
     this.#callback = callback;
 
     this.#init();
+  }
+
+  setProduct(newData) {
+    this.#Data = { ...newData };
+    this.#remove();
+  }
+
+  #remove() {
+    const oldElm = document.querySelector(
+      '.product_block[data-id="' + this.#Data.id + '"]'
+    );
+
+    this.#buildElm();
+    oldElm.replaceWith(this.#Elm);
+    this.#eventListener();
   }
 
   #init() {
@@ -271,8 +327,33 @@ class ProductManager {
       .then((response) => console.log(response));
   }
 
+  #editProduct(product) {
+    const idx = this.#Products.findIndex((obj) => obj.id === product.id);
+    console.log(idx);
+    if (idx > -1) {
+      console.log("hello");
+      this.#Products[idx].setProduct(product);
+    }
+  }
+
   #modalProduct({ action, id = 0 }) {
-    new ProductEditor({ action: action, id }, (data) => {});
+    new ProductEditor({ action: action, id }, (obj) => {
+      if (action == "edit") {
+        this.#editProduct(obj);
+      } else {
+        this.#Products.push(
+          new Product({ elmP: this.#Elm, obj }, (data) => {
+            if (data.action == "delete") {
+              this.#removeProduct(data.id);
+            }
+
+            if (data.action == "edit") {
+              this.#modalProduct({ action: "edit", id: data.id });
+            }
+          })
+        );
+      }
+    });
   }
 
   #eventListener() {

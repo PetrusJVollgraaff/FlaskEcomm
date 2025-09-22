@@ -96,3 +96,14 @@ form#product_form_editor > div > fieldset:nth-child(2) {
 form#product_form_editor > div > fieldset:last-child {
   grid-area: img;
 }
+
+form#product_form_editor #main_imgbtn {
+  border-radius: 2px;
+  width: 500px;
+  height: 500px;
+  padding: 2px;
+  background-image: var(--bg-img);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}

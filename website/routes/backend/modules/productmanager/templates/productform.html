@@ -66,8 +66,8 @@
             <legend>
                 Product images
             </legend>
-
-            <button type="button" id="main_imgbtn">
+            {{ form.main_mediaid() }}
+            <button type="button" id="main_imgbtn" style="--bg-img: url('{{mainImgPath}}')">
                 Main Image
             </button>
         </fieldset>

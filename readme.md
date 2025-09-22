@@ -1,6 +1,6 @@
 # Flask Ecommerce
-Using Python Flask to create an Online Shopping site
 
+Using Python Flask to create an Online Shopping site
 
 create and start Virtual Enviroment
 
@@ -29,5 +29,20 @@ run application
 
 ```
 python app.py
+
+```
+
+assess on browser
+
+```
+http://127.0.0.1:5000
+
+```
+
+access the backend
+
+```
+http://127.0.0.1:5000/edit
+Admin user created: admin@example.com / admin123
 
 ```
