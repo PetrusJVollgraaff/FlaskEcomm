@@ -243,9 +243,9 @@ def AddNewSpecialPrice(productid, form):
     if form.product_special.data:
         sqlnewprice1 =text('''
             INSERT INTO productprice ([product_id], [price], [isspecial], [specialdataStart], [specialdataEnd] [create_at], [deleted_yn])
-            VALUES(:productid, :price, 1, :datestart, dateend CURRENT_TIMESTAMP, 0)
+            VALUES(:productid, :price, 1, :datestart, :dateend, CURRENT_TIMESTAMP, 0)
         ''')
-        db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_normal.data, })        
+        db.session.execute(sqlnewprice1, {"productid": productid, "price": form.price_normal.data, "datestart":form.special_datestart.data, "dateend":form.special_dateend.data })        
         db.session.commit()
 
 #Add New Product

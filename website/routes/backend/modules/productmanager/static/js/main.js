@@ -46,7 +46,6 @@ class ProductEditor {
     }`;
 
     this.#init();
-    console.log(this);
   }
 
   #init() {
