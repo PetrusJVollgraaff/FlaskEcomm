@@ -35,14 +35,14 @@ python app.py
 assess on browser
 
 ```
-http://127.0.0.1:5000
+http://localhost:5000
 
 ```
 
 access the backend
 
 ```
-http://127.0.0.1:5000/edit
+http://localhost:5000/edit
 Admin user created: admin@example.com / admin123
 
 ```
