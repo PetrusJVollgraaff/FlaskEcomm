@@ -1,12 +1,45 @@
 {% extends 'frontendbase.html' %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('views.cartpages.static', filename='css/main.css') }}?v=1.1">
+{% endblock%}
+
 {% block title %}Cart{% endblock %}
 {% block content%}
 <h1>Cart</h1>
+<h1>Total: $ {{total}}</h1>
+<div class="cart_list_ctn">
+    {% for product in products %}
+    <div class="product_card" data-id="{{product.id}}">
+        <img src="{{product.imgpath}}">
+        <div>
+            <div class="header">
+                <h3>{{product.name}}</h3>
+            </div>
 
-{% if 'cart' in session%}
-{% for cart in session.cart %}
-<p>Hello wolrd</p>
-{% endfor %}
-{%endif%}
+            <div class="price_table">
+                <div class="price">
+                    <h3>
+                        <span>Price:</span>
+                        <span>$ {{product.normalprice}}</span>
+                    </h3>
+                </div>
+                <div class="price">
+                    <h3>
+                        <span>Qty:</span>
+                        <span>{{product.qty}}</span>
+                    </h3>
+                </div>
 
+                <div class="total">
+                    <h3>
+                        <span>Total:</span>
+                        <span>$ {{product.normalprice * product.qty}}</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 {% endblock %}
