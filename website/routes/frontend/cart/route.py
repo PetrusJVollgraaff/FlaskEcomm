@@ -2,12 +2,12 @@ from website.app import db
 from flask import Blueprint, jsonify, render_template, session, request
 
 
-cartpages = Blueprint('cartpages', __name__, template_folder="templates")
+cartpages = Blueprint('cartpages', __name__, template_folder="templates", url_prefix="/cart")
 
 def get_cart():
     return session.get('cart', {})
 
-@cartpages.route("/cart")
+@cartpages.route("/")
 def cart():
     cart = get_cart()
     print(cart)
@@ -19,7 +19,7 @@ def cart():
 
     return  render_template("cart.html")
 
-@cartpages.route("/cart/add/", methods=["POST"])
+@cartpages.route("/add/", methods=["POST"])
 def cart_add():    
     
     if request.method == 'POST':
@@ -36,7 +36,7 @@ def cart_add():
     return 
 
 
-@cartpages.route("/cart/remove/", methods=["POST"])
+@cartpages.route("/remove/", methods=["POST"])
 def cart_remove():    
     
     if request.method == 'POST':

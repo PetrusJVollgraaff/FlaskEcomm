@@ -1,0 +1,29 @@
+{% extends 'frontendbase.html' %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('views.productpages.static', filename='css/main.css') }}?v=1.1">
+{% endblock%}
+
+{% block title %}Product List{% endblock %}
+{% block content%}
+<h1>Products</h1>
+
+<div class="products_list">
+    {% for product in products %}
+    <div class="product_card" data-id="{{product.id}}">
+        <div class="header">
+            {{product.name}}
+        </div>
+        <img src="{{product.imgpath}}">
+        <div class="price">
+            ${{product.normalprice}}
+        </div>
+        <button type="button"
+            onclick="window.location.href='{{ url_for('views.productpages.product', product_id=product.id) }}'">
+            View
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

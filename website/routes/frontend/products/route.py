@@ -1,9 +1,13 @@
 from website.app import db
 from sqlalchemy import text
+import os
 
 from flask import Blueprint, redirect, render_template, url_for
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+Static_FOLDER = os.path.join(os.path.dirname(__file__), "static")
+print(BASE_DIR)
 
-productpages = Blueprint('productpages', __name__, template_folder="templates")
+productpages = Blueprint('productpages', __name__, template_folder="templates", static_folder='static', url_prefix='/products')
 
 
 sqlproduct = '''
@@ -44,7 +48,7 @@ WHERE P.deleted_yn = 0 AND P.showonline = 1
 '''
 
 
-@productpages.route('/products')
+@productpages.route('/')
 def products():
     sql = text(sqlproduct)
     result = db.session.execute(sql)
@@ -52,7 +56,7 @@ def products():
 
     return  render_template("products.html", products=products)
 
-@productpages.route('/products/<int:product_id>')
+@productpages.route('/<int:product_id>')
 def product(product_id):
     sql = text(sqlproduct+" AND P.id=:productid")
     result= db.session.execute(sql, {"productid": product_id})

@@ -32,7 +32,7 @@ def create_app():
     from .routes.backend.route import editlogin
     from .routes.backend.modules.route import modules
 
-    app.register_blueprint(views, url_prefix='/')
+    app.register_blueprint(views)
     app.register_blueprint(editlogin)
     app.register_blueprint(modules)
 
