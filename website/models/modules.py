@@ -1,5 +1,4 @@
-from website.app import db
-from datetime import datetime
+from . import *
 
 MolduleList = [
     {"name": "productmanager"}

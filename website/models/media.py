@@ -1,6 +1,4 @@
-from website.app import db
-from datetime import datetime
-
+from . import *
 
 class Medias(db.Model):
     __tablename__ = "medias"

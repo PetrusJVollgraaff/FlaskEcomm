@@ -11,12 +11,13 @@
 <div class="products_list">
     {% for product in products %}
     <div class="product_card" data-id="{{product.id}}">
-        <div class="header">
-            {{product.name}}
-        </div>
         <img src="{{product.imgpath}}">
-        <div class="price">
-            ${{product.normalprice}}
+
+        <div class="header">
+            <h3>{{product.name}}</h3>
+            <div class="price">
+                <h3>$ {{product.normalprice}} </h3>
+            </div>
         </div>
         <button type="button"
             onclick="window.location.href='{{ url_for('views.productpages.product', product_id=product.id) }}'">

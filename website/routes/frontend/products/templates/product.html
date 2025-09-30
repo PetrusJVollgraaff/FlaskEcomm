@@ -1,22 +1,37 @@
 {% extends 'frontendbase.html' %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('views.productpages.static', filename='css/main.css') }}?v=1.1">
+{% endblock%}
+
 {% block title %}Products View{% endblock %}
 {% block content%}
-<div>
-    <div class="">
-        <img src="{{product.imgpath}}" alt="">
-    </div>
-    <div>
-        <h1>{{product.name}}</h1>
-        <p>{{product.description}}</p>
-    </div>
-    <div>
-        <form id="addCart">
-            <input type="number" name="id" hidden value="{{product.id}}">
-            <div>
-                <input type="number" name="qty" id="" min="0" value="1">
+<div class="product_preview_ctn">
+    <div class="product_preview">
+        <div class="left_ctn">
+            <img src="{{product.imgpath}}" alt="">
+        </div>
+        <div class="right_ctn">
+            <div class="header">
+                <h1>{{product.name}}</h1>
+
+                <h1>${{product.normalprice}}</h1>
             </div>
-            <button type="submit">Add to Cart</button>
-        </form>
+            <div class="spacer">
+                <div>
+                    <p>{{product.description}}</p>
+                </div>
+                <div>
+                    <form id="addCart">
+                        <input type="number" name="id" hidden value="{{product.id}}">
+                        <div>
+                            <input type="number" name="qty" id="" min="0" value="1">
+                        </div>
+                        <button type="submit">Add to Cart</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
